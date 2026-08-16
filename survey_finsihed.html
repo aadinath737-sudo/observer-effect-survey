@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE OBSERVER EFFECT | Multiverse Dream Survey</title>
+    <style>
+        :root {
+            --bg-dark: #020308;
+            /* Ultra-light translucent background to let video shine through */
+            --card-bg: rgba(8, 11, 22, 0.25); 
+            --accent-cyan: #00f2fe;
+            --accent-purple: #4facfe;
+            --glow-color: rgba(0, 242, 254, 0.3);
+            --text-main: #ffffff;
+            --text-muted: #cbd5e1;
+            --border-glow: rgba(79, 172, 254, 0.45);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 
+           CENTERED & SIZED BLACK HOLE VIDEO 
+           Clear, unblurred background portal
+        */
+        #bgVideo {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 650px;       
+            height: 650px;      
+            z-index: 1;         
+            object-fit: cover;
+            border-radius: 50%;
+            filter: brightness(1.1) contrast(1.1); /* Crisp bright video */
+            /* Soft radial mask edge */
+            -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 75%);
+            mask-image: radial-gradient(circle, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 75%);
+            pointer-events: none;
+        }
+
+        /* Interactive Canvas for Mouse Hover Glow */
+        #starCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2; 
+            pointer-events: none;
+        }
+
+        .survey-card {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            /* VERY subtle blur so the video details stay crisp */
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 1px solid var(--border-glow);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9),
+                        0 0 30px var(--glow-color);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 28px;
+            letter-spacing: 3px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+        }
+
+        header p {
+            font-size: 13px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            height: 6px;
+            border-radius: 10px;
+            margin-bottom: 35px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 14.28%;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px var(--accent-cyan);
+        }
+
+        /* Step Visibility */
+        .step {
+            display: none;
+            opacity: 0;
+            transform: translateY(15px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .step.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .question-number {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+        }
+
+        .question-text {
+            font-size: 20px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 24px;
+            line-height: 1.4;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95); /* Makes text pop over moving video */
+        }
+
+        /* MCQ Options - Low Opacity Glass */
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-card {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            background: rgba(10, 15, 30, 0.35); /* Translucent so video is visible inside buttons */
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+        }
+
+        .option-card:hover {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 242, 254, 0.15);
+            transform: translateX(4px);
+        }
+
+        .option-card input[type="radio"] {
+            margin-right: 15px;
+            accent-color: var(--accent-cyan);
+            transform: scale(1.2);
+        }
+
+        /* Optional Text Box */
+        .details-box textarea {
+            width: 100%;
+            background: rgba(5, 8, 18, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 10px;
+            padding: 12px 15px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 70px;
+            transition: border-color 0.3s ease;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+        }
+
+        .details-box textarea:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.3);
+        }
+
+        /* Buttons Layout */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 35px;
+            gap: 15px;
+        }
+
+        button {
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: none;
+        }
+
+        .btn-prev {
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-prev:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .btn-next, .btn-submit {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            color: #070913;
+            box-shadow: 0 4px 15px var(--glow-color);
+            margin-left: auto;
+        }
+
+        .btn-next:hover, .btn-submit:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--glow-color);
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Background Video (Sized and centered behind card) -->
+<video autoplay loop muted playsinline id="bgVideo">
+    <source src="blackhole animation.mp4" type="video/mp4">
+</video>
+
+<!-- Interactive Mouse Stars Canvas (Fills entire screen) -->
+<canvas id="starCanvas"></canvas>
+
+<div class="survey-card">
+    <header>
+        <h1>The Observer Effect</h1>
+        <p>QUANTUM ENTANGLEMENT &amp; DREAM CONSCIOUSNESS</p>
+    </header>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- Replace YOUR_EMAIL@gmail.com with your actual email address -->
+    <form id="surveyForm" action="https://formsubmit.co/aadinath737@gmail.com" method="POST">
+        
+        <!-- STEP 1 -->
+        <div class="step active" data-step="1">
+            <div class="question-number">Question 01 / 07</div>
+            <div class="question-text">From what perspective do you primarily experience your dreams?</div>
+            
+            <div class="option-group">
+                <label class="option-card">
+                    <input type="radio" name="Perspective" value="1st Person" required> 1st Person (Through your own eyes)
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Perspective" value="3rd Person"> 3rd Person (Watching yourself like a movie)
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Perspective" value="Shifting"> Shifting back and forth between 1st &amp; 3rd person
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Perspective" value="External Entity"> Perspective of an entirely different person
+                </label>
+            </div>
+
+            <div class="details-box">
+                <textarea name="Perspective_Notes" placeholder="Optional: Elaborate on how your dream perspective feels..."></textarea>
+            </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="step" data-step="2">
+            <div class="question-number">Question 02 / 07</div>
+            <div class="question-text">Have you ever experienced Déjà Rêvé (a waking event occurring exactly as previously dreamt)?</div>
+            
+            <div class="option-group">
+                <label class="option-card">
+                    <input type="radio" name="Deja_Reve" value="Never"> Never
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Deja_Reve" value="Once or Twice"> Once or twice in my life
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Deja_Reve" value="Multiple Times"> Multiple times
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Deja_Reve" value="Frequently"> Frequently / Regular occurrence
+                </label>
+            </div>
+
+            <div class="details-box">
+                <textarea name="Deja_Reve_Notes" placeholder="Optional: Briefly describe a specific Déjà Rêvé memory..."></textarea>
+            </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="step" data-step="3">
+            <div class="question-number">Question 03 / 07</div>
+            <div class="question-text">Do you experience recurring "alternate lives" with persistent settings or storylines?</div>
+            
+            <div class="option-group">
+                <label class="option-card">
+                    <input type="radio" name="Alternate_Lives" value="No"> No, my dreams feel random or standard
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Alternate_Lives" value="Rarely"> Rarely (A few times a year)
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Alternate_Lives" value="Frequently"> Frequently (Consistent recurring world/life)
+                </label>
+            </div>
+
+            <div class="details-box">
+                <textarea name="Alternate_Lives_Notes" placeholder="Optional: Describe the alternate setting or timeline..."></textarea>
+            </div>
+        </div>
+
+        <!-- STEP 4 -->
+        <div class="step" data-step="4">
+            <div class="question-number">Question 04 / 07</div>
+            <div class="question-text">When looking into a mirror inside a dream, what do you usually see?</div>
+            
+            <div class="option-group">
+                <label class="option-card">
+                    <input type="radio" name="Mirror_Reflection" value="Exact Self"> My exact waking physical appearance
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Mirror_Reflection" value="Altered Self"> An altered, younger, or older version of myself
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Mirror_Reflection" value="Distorted"> Blurry, shifting, or distorted reflection
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Mirror_Reflection" value="Never Looked"> I have never looked in a mirror while dreaming
+                </label>
+            </div>
+
+            <div class="details-box">
+                <textarea name="Mirror_Notes" placeholder="Optional: Share details of what happened at the mirror..."></textarea>
+            </div>
+        </div>
+
+        <!-- STEP 5 -->
+        <div class="step" data-step="5">
+            <div class="question-number">Question 05 / 07</div>
+            <div class="question-text">Upon becoming self-aware or waking, how does the dream environment react?</div>
+            
+            <div class="option-group">
+                <label class="option-card">
+                    <input type="radio" name="State_Collapse" value="Immediate Collapse"> It instantly dissolves or fades away
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="State_Collapse" value="Gradual Fade"> It slowly loses coherence as I wake up
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="State_Collapse" value="Stable Continuity"> The world remains solid and persistent until the moment I open my eyes
+                </label>
+            </div>
+
+            <div class="details-box">
+                <textarea name="State_Collapse_Notes" placeholder="Optional: Describe what the transition out of the dream feels like..."></textarea>
+            </div>
+        </div>
+
+        <!-- STEP 6 -->
+        <div class="step" data-step="6">
+            <div class="question-number">Question 06 / 07</div>
+            <div class="question-text">In your vivid dreams, how do physical laws (gravity, light, cause-and-effect) behave?</div>
+            
+            <div class="option-group">
+                <label class="option-card">
+                    <input type="radio" name="Physics_Rules" value="Identical"> Identical to our waking world's physics
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Physics_Rules" value="Altered Rules"> Consistently governed by completely different physical rules
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Physics_Rules" value="Chaotic"> Completely random and incoherent
+                </label>
+            </div>
+
+            <div class="details-box">
+                <textarea name="Physics_Rules_Notes" placeholder="Optional: Note any alternate physical constants or unique rules you've observed..."></textarea>
+            </div>
+        </div>
+
+        <!-- STEP 7 -->
+        <div class="step" data-step="7">
+            <div class="question-number">Question 07 / 07</div>
+            <div class="question-text">Have you ever acquired information or solved a complex problem in a dream before knowing it in waking life?</div>
+            
+            <div class="option-group">
+                <label class="option-card">
+                    <input type="radio" name="Info_Transfer" value="Never"> Never
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Info_Transfer" value="Rarely"> Once or twice
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="Info_Transfer" value="Multiple Times"> Multiple times
+                </label>
+            </div>
+
+            <div class="details-box">
+                <textarea name="Info_Transfer_Notes" placeholder="Optional: Describe a specific instance of information or an epiphany gained..."></textarea>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="nav-buttons">
+            <button type="button" class="btn-prev" id="prevBtn" disabled>Back</button>
+            <button type="button" class="btn-next" id="nextBtn">Next</button>
+            <button type="submit" class="btn-submit" id="submitBtn" style="display: none;">Submit Data</button>
+        </div>
+
+    </form>
+</div>
+
+<script>
+    // --- STEP NAVIGATION LOGIC ---
+    let currentStep = 1;
+    const totalSteps = 7;
+
+    const steps = document.querySelectorAll('.step');
+    const progressBar = document.getElementById('progressBar');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function updateStepDisplay() {
+        steps.forEach(step => {
+            step.classList.remove('active');
+            if (parseInt(step.dataset.step) === currentStep) {
+                step.classList.add('active');
+            }
+        });
+
+        const progressPercent = (currentStep / totalSteps) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+
+        prevBtn.disabled = currentStep === 1;
+
+        if (currentStep === totalSteps) {
+            nextBtn.style.display = 'none';
+            submitBtn.style.display = 'inline-block';
+        } else {
+            nextBtn.style.display = 'inline-block';
+            submitBtn.style.display = 'none';
+        }
+    }
+
+    nextBtn.addEventListener('click', () => {
+        if (currentStep < totalSteps) {
+            currentStep++;
+            updateStepDisplay();
+        }
+    });
+
+    prevBtn.addEventListener('click', () => {
+        if (currentStep > 1) {
+            currentStep--;
+            updateStepDisplay();
+        }
+    });
+
+    // --- INTERACTIVE COSMOS & MOUSE GLOW LOGIC ---
+    const canvas = document.getElementById('starCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    let mouse = { x: -1000, y: -1000 };
+    const numStars = 200;
+    const stars = [];
+
+    window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+    });
+
+    class Star {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.baseRadius = Math.random() * 1.5 + 0.5;
+            this.radius = this.baseRadius;
+            this.baseAlpha = Math.random() * 0.45 + 0.15;
+            this.alpha = this.baseAlpha;
+            this.vx = (Math.random() - 0.5) * 0.25;
+            this.vy = (Math.random() - 0.5) * 0.25;
+            this.color = Math.random() > 0.35 ? '#00f2fe' : '#ffffff';
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+
+            if (this.x < 0) this.x = width;
+            if (this.x > width) this.x = 0;
+            if (this.y < 0) this.y = height;
+            if (this.y > height) this.y = 0;
+
+            const dx = mouse.x - this.x;
+            const dy = mouse.y - this.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const hoverRadius = 160;
+
+            if (dist < hoverRadius) {
+                const factor = 1 - dist / hoverRadius;
+                this.radius = this.baseRadius + factor * 3.5;
+                this.alpha = Math.min(1, this.baseAlpha + factor * 0.85);
+            } else {
+                this.radius = this.baseRadius;
+                this.alpha = this.baseAlpha;
+            }
+        }
+
+        draw() {
+            ctx.save();
+            ctx.globalAlpha = this.alpha;
+            ctx.fillStyle = this.color;
+            ctx.shadowBlur = this.radius * 4;
+            ctx.shadowColor = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    for (let i = 0; i < numStars; i++) {
+        stars.push(new Star());
+    }
+
+    function animateCosmos() {
+        ctx.clearRect(0, 0, width, height);
+        stars.forEach(star => {
+            star.update();
+            star.draw();
+        });
+        requestAnimationFrame(animateCosmos);
+    }
+
+    animateCosmos();
+
+    // Force video playback
+    const bgVideo = document.getElementById('bgVideo');
+    if (bgVideo) {
+        bgVideo.muted = true;
+        bgVideo.play().catch(() => {});
+    }
+</script>
+
+</body>
+</html>
